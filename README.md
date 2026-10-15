@@ -6,9 +6,10 @@ A healthcare management backend built using Django REST Framework and PostgreSQL
 
 - Python
 - Django
-- Django REST Framework
+- Django REST Framework (DRF)
 - PostgreSQL
 - Django REST Framework Simple JWT
+- Django ORM
 - psycopg
 - python-dotenv
 - dj-database-url
@@ -16,14 +17,15 @@ A healthcare management backend built using Django REST Framework and PostgreSQL
 ## Features
 
 - User registration and JWT-based login
-- Create, view, update, and delete patient records
-- Create and view doctor records
-- Update and delete doctor records created by the logged-in user
+- Create, retrieve, update, and delete patient records
+- Restrict patient records according to user ownership
+- Create, view, update, and delete doctor records
+- Allow only the creator to update or delete their doctor records
 - Assign doctors to patients
 - View and remove patient-doctor assignments
-- Restrict patient records according to user ownership
-- Validate requests and handle errors
-- Store data in PostgreSQL using Django ORM
+- Request validation and error handling
+- PostgreSQL database integration using Django ORM
+- Environment-based configuration
 
 ## Project Setup
 
@@ -31,32 +33,33 @@ A healthcare management backend built using Django REST Framework and PostgreSQL
 
 Install Python 3.10 or later and PostgreSQL.
 
-### 2. Open the Project
+### 2. Clone the Repository
 
-Open the project folder in VS Code and navigate to the folder containing `manage.py`.
-
-Activate the existing virtual environment:
-
-```powershell
-.\venv\Scripts\Activate.ps1
+```bash
+git clone https://github.com/Harshit-bhardwaj1/healthcare-backend.git
+cd healthcare-backend
 ```
 
-If the virtual environment does not exist, create it first:
+### 3. Create and Activate a Virtual Environment
+
+On Windows PowerShell:
 
 ```powershell
 py -m venv venv
 .\venv\Scripts\Activate.ps1
 ```
 
-### 3. Install Dependencies
+If you already have a virtual environment, activate it instead.
 
-```powershell
+### 4. Install Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-### 4. Configure Environment Variables
+### 5. Configure Environment Variables
 
-Create a `.env` file in the project root, in the same folder as `manage.py`.
+Create a `.env` file in the project root, in the same directory as `manage.py`.
 
 Add the following configuration:
 
@@ -71,17 +74,19 @@ Replace `YOUR_PASSWORD` with your PostgreSQL password and `YOUR_PORT` with the p
 
 Create a PostgreSQL database named `healthcare_db` if it does not already exist.
 
-For example, if PostgreSQL is running on port `5000`, use `5000` in `DATABASE_URL`. If it is running on port `5432`, use `5432`.
+For example, if PostgreSQL runs on port `5000`, use port `5000` in `DATABASE_URL`. If it runs on port `5432`, use port `5432`.
 
-### 5. Apply Migrations
+Keep your `.env` file private and do not commit it to GitHub.
 
-```powershell
+### 6. Apply Database Migrations
+
+```bash
 python manage.py migrate
 ```
 
-### 6. Start the Development Server
+### 7. Start the Development Server
 
-```powershell
+```bash
 python manage.py runserver
 ```
 
@@ -89,15 +94,14 @@ The application will be available at:
 
 `http://127.0.0.1:8000/`
 
-## Authentication
+## Authentication APIs
 
 All patient, doctor, and mapping endpoints require a valid JWT access token.
 
 ### Register a User
 
-**Method:** `POST`
-
-**Endpoint:** `/api/auth/register/`
+- **Method:** POST
+- **Endpoint:** `/api/auth/register/`
 
 Request body:
 
@@ -109,11 +113,10 @@ Request body:
 }
 ```
 
-### Login
+### Log In
 
-**Method:** `POST`
-
-**Endpoint:** `/api/auth/login/`
+- **Method:** POST
+- **Endpoint:** `/api/auth/login/`
 
 Request body:
 
@@ -126,19 +129,10 @@ Request body:
 
 The response contains an access token and a refresh token.
 
-For protected requests, select **Authorization → Bearer Token** in Postman and provide the access token.
+### Refresh an Access Token
 
-Alternatively, send this HTTP header:
-
-```http
-Authorization: Bearer YOUR_ACCESS_TOKEN
-```
-
-### Refresh Access Token
-
-**Method:** `POST`
-
-**Endpoint:** `/api/auth/token/refresh/`
+- **Method:** POST
+- **Endpoint:** `/api/auth/token/refresh/`
 
 Request body:
 
@@ -148,19 +142,15 @@ Request body:
 }
 ```
 
-## API Endpoints
+For protected requests, select **Authorization → Bearer Token** in Postman and provide the access token.
 
-All patient, doctor, and mapping endpoints require authentication.
+Alternatively, use this HTTP header:
 
-### Authentication
+```text
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/auth/register/` | Register a user |
-| POST | `/api/auth/login/` | Login and obtain JWT tokens |
-| POST | `/api/auth/token/refresh/` | Refresh an access token |
-
-### Patients
+## Patient Management APIs
 
 Patient records are associated with the user who creates them.
 
@@ -173,7 +163,7 @@ Patient records are associated with the user who creates them.
 | PATCH | `/api/patients/{id}/` | Partially update a patient |
 | DELETE | `/api/patients/{id}/` | Delete a patient |
 
-Example patient request:
+Example request:
 
 ```json
 {
@@ -185,7 +175,7 @@ Example patient request:
 }
 ```
 
-### Doctors
+## Doctor Management APIs
 
 Authenticated users can view doctor records. Only the creator can update or delete their doctor records.
 
@@ -198,7 +188,7 @@ Authenticated users can view doctor records. Only the creator can update or dele
 | PATCH | `/api/doctors/{id}/` | Partially update a doctor |
 | DELETE | `/api/doctors/{id}/` | Delete a doctor |
 
-Example doctor request:
+Example request:
 
 ```json
 {
@@ -209,9 +199,9 @@ Example doctor request:
 }
 ```
 
-### Patient-Doctor Mappings
+## Patient-Doctor Mapping APIs
 
-Mappings connect patients with doctors. Users can access mappings associated with their own patients.
+Mappings connect patients with doctors. Access to mappings is restricted according to patient ownership.
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -220,7 +210,7 @@ Mappings connect patients with doctors. Users can access mappings associated wit
 | GET | `/api/mappings/{patient_id}/` | List assignments for a specific patient |
 | DELETE | `/api/mappings/{id}/` | Remove a mapping |
 
-Example mapping request:
+Example request:
 
 ```json
 {
@@ -229,14 +219,15 @@ Example mapping request:
 }
 ```
 
-Use the actual patient and doctor IDs returned by the API.
+Replace the example IDs with actual patient and doctor IDs returned by the API. IDs may differ between databases.
 
 ## Authorization and Data Access
 
-- Patient records are accessible only to their owner.
+- All patient, doctor, and mapping endpoints require authentication.
+- Users can access only their own patient records.
 - Authenticated users can view doctor records.
 - Only the creator can update or delete a doctor record.
-- Mapping access is restricted according to patient ownership.
+- Mapping access follows patient ownership restrictions.
 - Requests without valid authentication credentials are rejected.
 
 ## Testing with Postman
@@ -248,15 +239,18 @@ Use the actual patient and doctor IDs returned by the API.
 5. Create a patient using `POST /api/patients/`.
 6. Create a doctor using `POST /api/doctors/`.
 7. Assign the doctor to the patient using `POST /api/mappings/`.
-8. Test GET, PUT, PATCH, and DELETE requests.
-9. Retrieve assignments for a patient using `GET /api/mappings/{patient_id}/`.
-10. Register another user and verify patient ownership restrictions.
-11. Test missing or invalid tokens and invalid input.
+8. Test the available GET, PUT, PATCH, and DELETE endpoints.
+9. Register another user and verify patient ownership restrictions.
+10. Test missing or invalid tokens, duplicate email registration, and invalid request data.
 
 ## Database
 
-The application uses PostgreSQL for persistent storage and Django ORM for database operations. Database credentials and connection settings are loaded from environment variables.
+The application uses PostgreSQL for persistent storage and Django ORM for database operations. Database connection settings are loaded from environment variables.
+
+## Repository
+
+GitHub: https://github.com/Harshit-bhardwaj1/healthcare-backend
 
 ## License
 
-Developed as a healthcare backend project.
+Developed as a healthcare backend assignment project.
